@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Translator · Wǒ Lǎoshī</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌐</text></svg>">
+  
+  <!-- Pinyin Pro Library for accurate tone marks -->
+  <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.18.2/dist/index.min.js"></script>
+
+  <style>
+    /* ===== THEME VARIABLES (Matches Main App) ===== */
+    :root { --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; }
+    .theme-warm {
+      --bg: #f9f3ec; --card: #ffffff; --primary: #c25a4f; --primary-light: #f2ddd9; --primary-dark: #9e3f36;
+      --text: #1e1e1e; --text-secondary: #6b5f5a; --border: #e8ded6; --success: #7a9e7e; --shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .theme-green {
+      --bg: #f0f7f4; --card: #ffffff; --primary: #4a8c6f; --primary-light: #d9ece3; --primary-dark: #2d5c48;
+      --text: #1a2b23; --text-secondary: #5c7267; --border: #d0e0d8; --success: #52986a; --shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    .theme-dark {
+      --bg: #121212; --card: #1e1e1e; --primary: #e57373; --primary-light: #3a2222; --primary-dark: #ffab91;
+      --text: #f5f5f5; --text-secondary: #a0a0a0; --border: #333333; --success: #81c784; --shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .theme-blue {
+      --bg: #eef3f9; --card: #ffffff; --primary: #3f72af; --primary-light: #dbe4f0; --primary-dark: #2b4c7e;
+      --text: #1a2530; --text-secondary: #5a6b7c; --border: #d2dbe6; --success: #4b8e8b; --shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+
+    /* ===== RESET & BASE ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); }
+    body {
+      background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center;
+      transition: background 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent;
+    }
+    #translator-app {
+      width: 100%; max-width: 480px; background: var(--bg); min-height: 100vh; display: flex;
+      flex-direction: column; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.1);
+    }
+
+    /* ===== HEADER ===== */
+    .app-header {
+      padding: 16px 20px 8px; display: flex; justify-content: space-between; align-items: center;
+      background: var(--bg); position: sticky; top: 0; z-index: 10;
+    }
+    .header-title { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .close-btn {
+      background: var(--card); border: none; width: 36px; height: 36px; border-radius: 50%;
+      font-size: 18px; cursor: pointer; box-shadow: var(--shadow); color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ===== TRANSLATOR UI ===== */
+    .translator-container {
+      flex: 1; padding: 10px 20px 40px; display: flex; flex-direction: column; gap: 12px;
+    }
+
+    .lang-header {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--card); border-radius: 12px; padding: 10px 16px;
+      box-shadow: var(--shadow); font-weight: 600; color: var(--text);
+    }
+    .lang-label { font-size: 15px; }
+    
+    .swap-btn {
+      background: var(--primary-light); color: var(--primary); border: none;
+      width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      transition: transform 0.3s ease;
+    }
+    .swap-btn:active { transform: scale(0.9) rotate(180deg); }
+
+    .text-box-container {
+      background: var(--card); border-radius: 16px; box-shadow: var(--shadow);
+      display: flex; flex-direction: column; overflow: hidden; border: 1.5px solid var(--border);
+      transition: border-color 0.3s; position: relative;
+    }
+    .text-box-container:focus-within { border-color: var(--primary); }
+
+    /* Standard Textarea */
+    textarea {
+      width: 100%; height: 140px; border: none; background: transparent; resize: none;
+      padding: 16px; font-size: 18px; color: var(--text); outline: none; line-height: 1.5;
+    }
+    textarea::placeholder { color: var(--text-secondary); opacity: 0.6; font-size: 16px; }
+
+    /* Pinyin Display Area (Hidden by default) */
+    #pinyin-display {
+      width: 100%; height: 140px; padding: 16px; font-size: 22px; color: var(--text); 
+      line-height: 2.2; overflow-y: auto; display: none; font-weight: 500;
+    }
+    
+    /* Ruby Tag Styling */
+    ruby {
+      ruby-align: center;
+      margin: 0 2px;
+    }
+    rt {
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .action-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; background: var(--bg); border-top: 1px solid var(--border);
+    }
+    
+    .action-group { display: flex; gap: 8px; }
+    
+    .icon-btn {
+      background: var(--card); border: none; width: 38px; height: 38px; border-radius: 50%;
+      font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.2s;
+    }
+    .icon-btn:active { transform: scale(0.9); }
+    .icon-btn.active { background: var(--primary); color: #fff; }
+    
+    .mic-btn.listening { background: #d9534f; color: #fff; animation: pulse 1.5s infinite; }
+    
+    .translate-btn {
+      flex: 1; padding: 14px; border-radius: 12px; border: none; background: var(--primary);
+      color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 4px;
+      display: flex; justify-content: center; align-items: center; gap: 8px;
+      transition: all 0.2s;
+    }
+    .translate-btn:active { transform: scale(0.98); }
+    .translate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .loading-dots { display: none; }
+    .loading-dots span {
+      animation: blink 1.4s infinite both; display: inline-block; width: 6px; height: 6px;
+      background: #fff; border-radius: 50%; margin: 0 2px;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(217, 83, 79, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(217, 83, 79, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(217, 83, 79, 0); }
+    }
+  </style>
+</head>
+<body class="theme-warm">
+
+<div id="translator-app">
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-title">
+      <span>🌐</span> Wǒ Lǎoshī Translate
+    </div>
+    <button class="close-btn" onclick="closeTranslator()">✕</button>
+  </header>
+
+  <!-- TRANSLATOR UI -->
+  <div class="translator-container">
+    
+    <!-- LANGUAGE SWAPPER -->
+    <div class="lang-header">
+      <span class="lang-label" id="source-lang-label">English</span>
+      <button class="swap-btn" onclick="swapLanguages()" title="Swap Languages">⇄</button>
+      <span class="lang-label" id="target-lang-label">Chinese</span>
+    </div>
+
+    <!-- SOURCE TEXT BOX -->
+    <div class="text-box-container">
+      <textarea id="source-text" placeholder="Enter text or use the mic..." oninput="checkInput()"></textarea>
+      <div class="action-bar">
+        <div class="action-group">
+          <button class="icon-btn" id="clear-btn" onclick="clearText()" title="Clear" style="display:none;">✕</button>
+        </div>
+        <div class="action-group">
+          <button class="icon-btn mic-btn" id="mic-btn" onclick="toggleVoiceInput()" title="Voice Input">🎤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSLATE BUTTON -->
+    <button class="translate-btn" id="translate-btn" onclick="translateText()">
+      <span id="btn-text">Translate</span>
+      <div class="loading-dots" id="loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </button>
+
+    <!-- TARGET TEXT BOX -->
+    <div class="text-box-container" style="background: var(--primary-light);">
+      <textarea id="target-text" placeholder="Translation will appear here..." readonly></textarea>
+      
+      <!-- NEW: Pinyin Display for Chinese translations -->
+      <div id="pinyin-display"></div>
+
+      <div class="action-bar" style="background: transparent; border-top: none;">
+        <div class="action-group">
+          <button class="icon-btn" onclick="copyTranslation()" title="Copy">📋</button>
+        </div>
+        <div class="action-group">
+          <button class="icon-btn" onclick="speakTranslation()" title="Listen">🔊</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   STATE & SETUP
+   ========================================================================== */
+let sourceLang = 'en'; 
+let targetLang = 'zh-CN';
+let isListening = false;
+let recognition = null;
+let currentTranslationText = ""; // Stores the raw translation for Copy/Speak
+
+const sourceTextEl = document.getElementById('source-text');
+const targetTextEl = document.getElementById('target-text');
+const pinyinDisplayEl = document.getElementById('pinyin-display');
+const sourceLabel = document.getElementById('source-lang-label');
+const targetLabel = document.getElementById('target-lang-label');
+const translateBtn = document.getElementById('translate-btn');
+const clearBtn = document.getElementById('clear-btn');
+const micBtn = document.getElementById('mic-btn');
+const btnText = document.getElementById('btn-text');
+const loadingDots = document.getElementById('loading-dots');
+
+/* ==========================================================================
+   UI LOGIC
+   ========================================================================== */
+function updateUILanguage() {
+  sourceLabel.textContent = sourceLang === 'en' ? 'English' : 'Chinese';
+  targetLabel.textContent = targetLang === 'en' ? 'English' : 'Chinese';
+  sourceTextEl.placeholder = sourceLang === 'en' ? 'Enter English text...' : '输入中文...';
+  
+  if (recognition) {
+    recognition.lang = sourceLang === 'en' ? 'en-US' : 'zh-CN';
+  }
+}
+
+function checkInput() {
+  if (sourceTextEl.value.trim().length > 0) {
+    clearBtn.style.display = 'flex';
+  } else {
+    clearBtn.style.display = 'none';
+  }
+}
+
+function swapLanguages() {
+  const temp = sourceLang;
+  sourceLang = targetLang;
+  targetLang = temp;
+  
+  const currentSourceText = sourceTextEl.value;
+  sourceTextEl.value = currentTranslationText;
+  
+  // Reset target UI
+  targetTextEl.value = currentSourceText;
+  targetTextEl.style.display = 'block';
+  pinyinDisplayEl.style.display = 'none';
+  pinyinDisplayEl.innerHTML = '';
+  
+  updateUILanguage();
+  checkInput();
+  
+  if (sourceTextEl.value.trim().length > 0) {
+    translateText();
+  }
+}
+
+function clearText() {
+  sourceTextEl.value = '';
+  targetTextEl.value = '';
+  currentTranslationText = "";
+  targetTextEl.style.display = 'block';
+  pinyinDisplayEl.style.display = 'none';
+  pinyinDisplayEl.innerHTML = '';
+  checkInput();
+  sourceTextEl.focus();
+}
+
+function copyTranslation() {
+  if (!currentTranslationText) return;
+  
+  navigator.clipboard.writeText(currentTranslationText).then(() => {
+    const copyBtn = event.currentTarget;
+    const originalText = copyBtn.innerHTML;
+    copyBtn.innerHTML = '✅';
+    setTimeout(() => copyBtn.innerHTML = originalText, 1500);
+  }).catch(err => {
+    console.error('Failed to copy: ', err);
+  });
+}
+
+/* ==========================================================================
+   TRANSLATION API & PINYIN GENERATION
+   ========================================================================== */
+async function translateText() {
+  const text = sourceTextEl.value.trim();
+  if (!text) return;
+  
+  translateBtn.disabled = true;
+  btnText.style.display = 'none';
+  loadingDots.style.display = 'block';
+  
+  // Reset target area
+  targetTextEl.value = '';
+  currentTranslationText = "";
+  targetTextEl.style.display = 'block';
+  pinyinDisplayEl.style.display = 'none';
+  pinyinDisplayEl.innerHTML = '';
+  
+  try {
+    const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${targetLang}`;
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+    
+    if (data.responseData && data.responseData.translatedText) {
+      let translated = data.responseData.translatedText;
+      translated = translated.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+      
+      currentTranslationText = translated;
+      
+      // IF TRANSLATING TO CHINESE: Apply Ruby formatting
+      if (targetLang === 'zh-CN') {
+        targetTextEl.style.display = 'none'; // Hide standard textarea
+        pinyinDisplayEl.style.display = 'block'; // Show formatted div
+        
+        // Use pinyin-pro to generate accurate Ruby HTML
+        // 'type: "html"' automatically creates <ruby>char<rt>pinyin</rt></ruby>
+        const rubyHtml = pinyinPro.html(translated, { toneType: 'symbol', type: 'html' });
+        pinyinDisplayEl.innerHTML = rubyHtml;
+        
+      } else {
+        // IF TRANSLATING TO ENGLISH: Use standard textarea
+        targetTextEl.value = translated;
+      }
+      
+    } else {
+      targetTextEl.value = "Translation error. Please try again.";
+    }
+    
+  } catch (error) {
+    console.error('Translation error:', error);
+    targetTextEl.value = "Network error. Please check your connection.";
+  } finally {
+    translateBtn.disabled = false;
+    btnText.style.display = 'block';
+    loadingDots.style.display = 'none';
+  }
+}
+
+/* ==========================================================================
+   TEXT-TO-SPEECH (Audio Output)
+   ========================================================================== */
+function speakTranslation() {
+  if (!currentTranslationText) return;
+  
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(currentTranslationText);
+    u.lang = targetLang === 'en' ? 'en-US' : 'zh-CN';
+    u.rate = 0.9;
+    window.speechSynthesis.speak(u);
+  } else {
+    alert('Text-to-speech is not supported in this browser.');
+  }
+}
+
+/* ==========================================================================
+   SPEECH-TO-TEXT (Voice Input)
+   ========================================================================== */
+function setupVoiceInput() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+  if (!SpeechRecognition) {
+    micBtn.style.display = 'none';
+    return;
+  }
+  
+  recognition = new SpeechRecognition();
+  recognition.lang = sourceLang === 'en' ? 'en-US' : 'zh-CN';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  
+  recognition.onstart = function() {
+    isListening = true;
+    micBtn.classList.add('listening');
+    micBtn.innerHTML = '🛑';
+    sourceTextEl.placeholder = "Listening...";
+  };
+  
+  recognition.onresult = function(event) {
+    const speechResult = event.results[0][0].transcript;
+    sourceTextEl.value = speechResult;
+    checkInput();
+    translateText();
+  };
+  
+  recognition.onerror = function(event) {
+    console.log('Speech recognition error', event.error);
+    if (event.error === 'not-allowed') {
+      alert('Microphone access denied. Please allow it in settings.');
+    }
+  };
+  
+  recognition.onend = function() {
+    isListening = false;
+    micBtn.classList.remove('listening');
+    micBtn.innerHTML = '🎤';
+    updateUILanguage();
+  };
+}
+
+function toggleVoiceInput() {
+  if (!recognition) {
+    alert('Voice input is not supported in this browser.');
+    return;
+  }
+  
+  if (isListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+}
+
+/* ==========================================================================
+   THEME & INIT
+   ========================================================================== */
+function loadTheme() {
+  try {
+    const saved = localStorage.getItem('woLaoshiState');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const themes = ['theme-warm', 'theme-green', 'theme-dark', 'theme-blue'];
+      if (parsed.themeIndex !== undefined && themes[parsed.themeIndex]) {
+        document.body.className = themes[parsed.themeIndex];
+      }
+    }
+  } catch(e) {
+    console.log("Could not load theme, using default.");
+  }
+}
+
+function closeTranslator() {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage('closeTranslator', '*');
+  } else {
+    window.history.back();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadTheme();
+  setupVoiceInput();
+  updateUILanguage();
+  sourceTextEl.focus();
+});
+</script>
+</body>
+</html>

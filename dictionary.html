@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dictionary · Wǒ Lǎoshī</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📖</text></svg>">
+  
+  <style>
+    /* ===== THEME VARIABLES (Matches Main App) ===== */
+    :root { --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; }
+    .theme-warm {
+      --bg: #f9f3ec; --card: #ffffff; --primary: #c25a4f; --primary-light: #f2ddd9; --primary-dark: #9e3f36;
+      --text: #1e1e1e; --text-secondary: #6b5f5a; --border: #e8ded6; --success: #7a9e7e; --shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .theme-green {
+      --bg: #f0f7f4; --card: #ffffff; --primary: #4a8c6f; --primary-light: #d9ece3; --primary-dark: #2d5c48;
+      --text: #1a2b23; --text-secondary: #5c7267; --border: #d0e0d8; --success: #52986a; --shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    .theme-dark {
+      --bg: #121212; --card: #1e1e1e; --primary: #e57373; --primary-light: #3a2222; --primary-dark: #ffab91;
+      --text: #f5f5f5; --text-secondary: #a0a0a0; --border: #333333; --success: #81c784; --shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .theme-blue {
+      --bg: #eef3f9; --card: #ffffff; --primary: #3f72af; --primary-light: #dbe4f0; --primary-dark: #2b4c7e;
+      --text: #1a2530; --text-secondary: #5a6b7c; --border: #d2dbe6; --success: #4b8e8b; --shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+
+    /* ===== RESET & BASE ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); }
+    body {
+      background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center;
+      transition: background 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent;
+    }
+    #dictionary-app {
+      width: 100%; max-width: 480px; background: var(--bg); min-height: 100vh; display: flex;
+      flex-direction: column; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.1);
+    }
+
+    /* ===== HEADER ===== */
+    .app-header {
+      padding: 16px 20px 8px; display: flex; justify-content: space-between; align-items: center;
+      background: var(--bg); position: sticky; top: 0; z-index: 10;
+    }
+    .header-title { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .close-btn {
+      background: var(--card); border: none; width: 36px; height: 36px; border-radius: 50%;
+      font-size: 18px; cursor: pointer; box-shadow: var(--shadow); color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ===== SEARCH SECTION ===== */
+    .search-container {
+      padding: 10px 20px; position: sticky; top: 60px; background: var(--bg); z-index: 9;
+    }
+    .search-box {
+      display: flex; align-items: center; background: var(--card); border-radius: 999px;
+      padding: 6px 6px 6px 18px; box-shadow: var(--shadow); border: 1.5px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    .search-box:focus-within { border-color: var(--primary); }
+    .search-box input {
+      flex: 1; border: none; background: transparent; font-size: 16px; color: var(--text);
+      outline: none; padding: 8px 0;
+    }
+    .search-box input::placeholder { color: var(--text-secondary); opacity: 0.7; }
+    
+    .mic-btn {
+      background: var(--primary-light); color: var(--primary); border: none; width: 44px; height: 44px;
+      border-radius: 50%; font-size: 20px; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: all 0.2s; margin-left: 8px;
+    }
+    .mic-btn.listening { background: var(--primary); color: #fff; animation: pulse 1.5s infinite; }
+    .clear-btn {
+      background: transparent; border: none; color: var(--text-secondary); font-size: 18px;
+      cursor: pointer; padding: 0 8px; display: none;
+    }
+
+    /* ===== RESULTS LIST ===== */
+    .results-container {
+      flex: 1; padding: 10px 20px 40px; overflow-y: auto;
+    }
+    .results-container::-webkit-scrollbar { width: 0; }
+    
+    .result-card {
+      background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px;
+      box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: flex-start;
+      animation: fadeIn 0.3s ease;
+    }
+    .result-info { flex: 1; }
+    .result-hanzi { font-size: 26px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .result-pinyin { font-size: 15px; color: var(--primary); font-weight: 500; margin-bottom: 8px; }
+    .result-def { font-size: 14px; color: var(--text-secondary); line-height: 1.4; }
+    .result-level { font-size: 11px; color: var(--text-secondary); opacity: 0.7; margin-top: 4px; }
+    
+    .speak-btn {
+      background: var(--primary-light); border: none; width: 36px; height: 36px; border-radius: 50%;
+      font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--primary); margin-left: 12px; flex-shrink: 0;
+    }
+    .speak-btn:active { transform: scale(0.9); }
+
+    .empty-state {
+      text-align: center; padding: 40px 20px; color: var(--text-secondary);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state p { font-size: 14px; line-height: 1.5; }
+
+    .loading-state {
+      text-align: center; padding: 40px 20px; color: var(--text-secondary);
+    }
+    .loading-state .spinner {
+      border: 4px solid var(--border); border-top: 4px solid var(--primary);
+      border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(194, 90, 79, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(194, 90, 79, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(194, 90, 79, 0); }
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="theme-warm">
+
+<div id="dictionary-app">
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-title">
+      <span>📖</span> Wǒ Lǎoshī Dict
+    </div>
+    <button class="close-btn" onclick="closeDictionary()">✕</button>
+  </header>
+
+  <!-- SEARCH -->
+  <div class="search-container">
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="English, 汉字, or pinyin..." oninput="handleSearch()" disabled>
+      <button class="clear-btn" id="clear-btn" onclick="clearSearch()">✕</button>
+      <button class="mic-btn" id="mic-btn" onclick="toggleVoiceSearch()" title="Voice Search" disabled>🎤</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-container" id="results-container">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading complete HSK vocabulary...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   STATE & DATA MANAGEMENT
+   ========================================================================== */
+let DICTIONARY = []; // Will store the processed data
+const searchInput = document.getElementById('search-input');
+const clearBtn = document.getElementById('clear-btn');
+const resultsContainer = document.getElementById('results-container');
+const micBtn = document.getElementById('mic-btn');
+
+// Helper to remove tones from pinyin (e.g., "nǐ hǎo" -> "ni hao")
+function removeTones(pinyin) {
+  const toneMap = {
+    'ā': 'a', 'á': 'a', 'ǎ': 'a', 'à': 'a', 'a': 'a',
+    'ē': 'e', 'é': 'e', 'ě': 'e', 'è': 'e', 'e': 'e',
+    'ī': 'i', 'í': 'i', 'ǐ': 'i', 'ì': 'i', 'i': 'i',
+    'ō': 'o', 'ó': 'o', 'ǒ': 'o', 'ò': 'o', 'o': 'o',
+    'ū': 'u', 'ú': 'u', 'ǔ': 'u', 'ù': 'u', 'u': 'u',
+    'ǖ': 'v', 'ǘ': 'v', 'ǚ': 'v', 'ǜ': 'v', 'ü': 'v'
+  };
+  return pinyin.toLowerCase().replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü]/g, match => toneMap[match] || match);
+}
+
+// Helper to extract old HSK level for display
+function getDisplayLevel(levelArray) {
+  if (!levelArray || levelArray.length === 0) return '';
+  // Prefer old HSK levels for display (e.g., "old-3" -> "HSK 3")
+  const oldLevel = levelArray.find(l => l.startsWith('old-'));
+  if (oldLevel) {
+    return `HSK ${oldLevel.replace('old-', '')}`;
+  }
+  // Fallback to new HSK levels
+  const newLevel = levelArray.find(l => l.startsWith('new-'));
+  if (newLevel) {
+    return `HSK ${newLevel.replace('new-', '')} (New)`;
+  }
+  return '';
+}
+
+// Fetch and process the data
+async function loadDictionaryData() {
+  try {
+    // Using the minified JSON for faster loading. The 'master' branch is the default.
+    const response = await fetch('https://raw.githubusercontent.com/TheOpenDictionary/complete-hsk-vocabulary/master/complete.min.json');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const rawData = await response.json();
+    
+    // Transform the raw data into a simpler format for our app
+    DICTIONARY = rawData.map(entry => {
+      const form = entry.forms && entry.forms.length > 0 ? entry.forms[0] : null;
+      if (!form) return null; // Skip if no form data
+      
+      const pinyin = form.transcriptions ? form.transcriptions.pinyin : '';
+      const meanings = form.meanings ? form.meanings.join('; ') : '';
+      
+      // Clean up the meaning string (sometimes it has extra quotes or spaces)
+      const cleanedMeaning = meanings.replace(/^"|"$/g, '').trim();
+      
+      return {
+        hanzi: entry.simplified,
+        pinyin: pinyin,
+        plainPinyin: removeTones(pinyin), // For searching without tones
+        en: cleanedMeaning,
+        level: getDisplayLevel(entry.level),
+        pos: entry.pos ? entry.pos.join(', ') : ''
+      };
+    }).filter(item => item !== null); // Remove any null entries
+
+    // Enable UI and show initial state
+    searchInput.disabled = false;
+    micBtn.disabled = false;
+    searchInput.focus();
+    
+    // Show a welcome message or the first few words
+    showWelcomeMessage();
+
+  } catch (error) {
+    console.error('Failed to load dictionary data:', error);
+    resultsContainer.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⚠️</div>
+        <p><strong>Could not load the dictionary.</strong><br>Please check your internet connection and try refreshing the page.</p>
+      </div>
+    `;
+    // Optionally, you could load a small fallback dataset here
+  }
+}
+
+function showWelcomeMessage() {
+  resultsContainer.innerHTML = `
+    <div class="empty-state">
+      <div class="icon">🔍</div>
+      <p>Search by English, Chinese characters, or Pinyin (with or without tones).<br><br>The complete HSK 1-6 vocabulary is now available. Try searching "hello", "学习", or "xue xi".</p>
+    </div>
+  `;
+}
+
+/* ==========================================================================
+   SEARCH LOGIC
+   ========================================================================== */
+function handleSearch() {
+  const query = searchInput.value.trim().toLowerCase();
+  
+  // Toggle clear button
+  clearBtn.style.display = query.length > 0 ? 'block' : 'none';
+  
+  if (query.length === 0) {
+    showWelcomeMessage();
+    return;
+  }
+
+  // Filter dictionary
+  const results = DICTIONARY.filter(item => {
+    // Normalize query and data for comparison
+    const q = query.replace(/\s+/g, ''); // Remove spaces for pinyin matching
+    const pinyinWithTones = item.pinyin.toLowerCase().replace(/\s+/g, '');
+    const pinyinPlain = item.plainPinyin.replace(/\s+/g, '');
+    
+    return item.hanzi.includes(query) || 
+           item.en.toLowerCase().includes(query) || 
+           pinyinWithTones.includes(q) || 
+           pinyinPlain.includes(q);
+  });
+
+  // Limit results to avoid performance issues with huge lists
+  const limitedResults = results.slice(0, 50); // Show max 50 results
+
+  renderResults(limitedResults, query, results.length);
+}
+
+function renderResults(results, query, totalCount) {
+  if (results.length === 0) {
+    resultsContainer.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🤷‍♂️</div>
+        <p>No results found for "<strong>${query}</strong>".<br>Try checking your spelling or tone marks.</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = results.map(item => `
+    <div class="result-card">
+      <div class="result-info">
+        <div class="result-hanzi">${item.hanzi}</div>
+        <div class="result-pinyin">${item.pinyin}</div>
+        <div class="result-def">${item.en} ${item.pos ? `<span style="font-size:11px; opacity:0.6;">(${item.pos})</span>` : ''}</div>
+        ${item.level ? `<div class="result-level">${item.level}</div>` : ''}
+      </div>
+      <button class="speak-btn" onclick="speakText('${item.hanzi}')">🔊</button>
+    </div>
+  `).join('');
+
+  // If there are more results than displayed, show a note
+  if (totalCount > 50) {
+    html += `<p style="text-align:center; font-size:12px; color:var(--text-secondary); margin-top:10px;">Showing first 50 of ${totalCount} results. Refine your search for better results.</p>`;
+  }
+
+  resultsContainer.innerHTML = html;
+}
+
+function clearSearch() {
+  searchInput.value = '';
+  handleSearch();
+  searchInput.focus();
+}
+
+/* ==========================================================================
+   TEXT-TO-SPEECH
+   ========================================================================== */
+function speakText(text) {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN';
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+  }
+}
+
+/* ==========================================================================
+   VOICE SEARCH (Web Speech API)
+   ========================================================================== */
+let recognition = null;
+let isListening = false;
+
+function setupVoiceSearch() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+  if (!SpeechRecognition) {
+    micBtn.style.display = 'none'; // Hide mic if not supported
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'zh-CN'; // Set to Chinese for Chinese dictionary
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = function() {
+    isListening = true;
+    micBtn.classList.add('listening');
+    micBtn.innerHTML = '🛑'; // Stop icon
+    searchInput.placeholder = "Listening...";
+  };
+
+  recognition.onresult = function(event) {
+    const speechResult = event.results[0][0].transcript;
+    searchInput.value = speechResult;
+    handleSearch();
+  };
+
+  recognition.onerror = function(event) {
+    console.log('Speech recognition error', event.error);
+    if (event.error === 'not-allowed') {
+      alert('Microphone access denied. Please allow it in your browser settings.');
+    }
+  };
+
+  recognition.onend = function() {
+    isListening = false;
+    micBtn.classList.remove('listening');
+    micBtn.innerHTML = '🎤';
+    searchInput.placeholder = "English, 汉字, or pinyin...";
+  };
+}
+
+function toggleVoiceSearch() {
+  if (!recognition) {
+    alert('Voice search is not supported in this browser.');
+    return;
+  }
+
+  if (isListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+}
+
+/* ==========================================================================
+   THEME & CLOSE
+   ========================================================================== */
+function loadTheme() {
+  try {
+    const saved = localStorage.getItem('woLaoshiState');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const themes = ['theme-warm', 'theme-green', 'theme-dark', 'theme-blue'];
+      if (parsed.themeIndex !== undefined && themes[parsed.themeIndex]) {
+        document.body.className = themes[parsed.themeIndex];
+      }
+    }
+  } catch(e) {
+    console.log("Could not load theme, using default.");
+  }
+}
+
+function closeDictionary() {
+  // If opened in a new tab, close it. If in an iframe, tell parent to close.
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage('closeDictionary', '*');
+  } else {
+    window.history.back();
+  }
+}
+
+/* ==========================================================================
+   INIT
+   ========================================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  loadTheme();
+  setupVoiceSearch();
+  
+  // Start loading the massive dataset
+  loadDictionaryData();
+});
+</script>
+</body>
+</html>

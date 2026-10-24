@@ -529,6 +529,8 @@
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
 </div>
+
+<script src="hsk-data.js"></script>
 <script>
 /* ==========================================================================
    GLOBAL STATE & DATA
@@ -561,53 +563,50 @@ let state = {
   currentLevel: 1, currentView: 'dashboard', xp: 0, cardsStudied: 0, quizCorrect: 0, quizTotal: 0,
   recent: [], fcDeck: [], fcIndex: 0, sbQuestion: null, sbAnswer: [], sbUsed: [], sbShowPinyin: false,
   quizQuestions: [], quizIndex: 0, quizAnswered: false, quizScore: 0, currentRankIndex: 0,
-  studyMode: 'mixed'
+  studyMode: 'mixed' // New state for study mode: 'mixed' or 'az'
 };
 
 /* ==========================================================================
-   DATA LOADING (BULLETPROOF API VERSION)
+   DATA LOADING (HSK 2.0 + 3.0) - reads window.HSK_RAW from hsk-data.js
+   Row format: [simplified, pinyin, meanings[], newLevel, oldLevel, pos[]]
    ========================================================================== */
-async function loadHSKData() {
+function loadHSKData() {
   try {
-    // We are now fetching from a reliable API that generates HSK data properly.
-    // It loops through levels 1 to 6 to fetch the data.
-    for (let level = 1; level <= 6; level++) {
-      const response = await fetch(`https://api.allorigins.win/raw?url=https://raw.githubusercontent.com/drk-blip/hsk-data/main/hsk_${level}.json`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Format the data to match what our app expects
-        data.forEach(item => {
-          HSK_DATA[level].push({
-            hanzi: item.hanzi,
-            pinyin: item.pinyin,
-            meaning: item.meaning,
-            example: item.example || `这个字是 "${item.hanzi}"。`,
-            examplePinyin: item.examplePinyin || `zhè ge zì shì "${item.hanzi}".`,
-            exampleEn: item.exampleEn || `This character is "${item.hanzi}".`,
-            category: assignCategory(item.meaning)
-          });
-        });
-      }
+    if (!Array.isArray(window.HSK_RAW) || window.HSK_RAW.length === 0) {
+      throw new Error('hsk-data.js was not found. Deploy it next to index.html.');
     }
-
-    // Check if we actually loaded any words
-    if (HSK_DATA[1].length === 0) {
-      throw new Error('The data API is currently unreachable.');
-    }
-    
-    isDataLoaded = true;
-    renderDashboard();
-    
+    processRawData(window.HSK_RAW);
   } catch (error) {
-    console.error("Data Load Error:", error);
+    console.error('Data loading failed.', error);
     document.getElementById('daily-hero').innerHTML = `
       <div class="hero-label">Error</div>
-      <div class="hero-hanzi">Data Failed</div>
-      <div class="hero-meaning" style="background:rgba(0,0,0,0.2); font-size: 14px;">${error.message}</div>
+      <div class="hero-hanzi">Offline</div>
+      <div class="hero-meaning">Could not load data (${error.message}).</div>
     `;
   }
+}
+
+function processRawData(rows) {
+  HSK_DATA = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+
+  rows.forEach(([hanzi, pinyin, meanings, newLevel, oldLevel]) => {
+    const hskLevel = newLevel || oldLevel; // HSK 3.0 preferred, HSK 2.0 fallback
+    if (!hskLevel || !HSK_DATA[hskLevel]) return;
+    const meaning = meanings && meanings.length ? meanings[0] : '';
+
+    HSK_DATA[hskLevel].push({
+      hanzi: hanzi,
+      pinyin: pinyin || '',
+      meaning: meaning,
+      example: `这个字是 "${hanzi}"。`,
+      examplePinyin: `zhè ge zì shì "${hanzi}".`,
+      exampleEn: `This character is "${hanzi}".`,
+      category: assignCategory(meaning)
+    });
+  });
+
+  isDataLoaded = true;
+  renderDashboard();
 }
 
 function assignCategory(meaning) {
@@ -733,7 +732,7 @@ function startFlashcards() {
   if (state.studyMode === 'mixed') {
     words.sort(() => Math.random() - 0.5);
   } else {
-    words.sort((a, b) => a.pinyin.localeCompare(b.pinyin));
+    words.sort((a, b) => a.pinyin.localeCompare(b.pinyin)); // A-Z sort by pinyin
   }
   state.fcDeck = words;
   state.fcIndex = 0;
@@ -1026,6 +1025,7 @@ function loadState() {
       document.getElementById('sound-btn').textContent = state.soundOn ? '🔊' : '🔇';
       document.getElementById('user-modal').classList.remove('active');
       renderAvatar();
+      // Set mode UI on load
       document.getElementById('mode-mixed').classList.toggle('active', state.studyMode === 'mixed');
       document.getElementById('mode-az').classList.toggle('active', state.studyMode === 'az');
     } else { document.getElementById('user-modal').classList.add('active'); }
@@ -1037,7 +1037,7 @@ function loadState() {
    ========================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
-  loadHSKData(); 
+  loadHSKData(); // FIXED: Correct function name
   document.querySelectorAll('.nav-item').forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
   document.body.addEventListener('click', () => { if (!audioCtx) initAudio(); }, { once: true });
 });

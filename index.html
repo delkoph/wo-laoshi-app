@@ -565,61 +565,36 @@ let state = {
 };
 
 /* ==========================================================================
-   DATA LOADING
+   DATA LOADING (BULLETPROOF API VERSION)
    ========================================================================== */
 async function loadHSKData() {
   try {
-    // Fetch the JSON file
-    const response = await fetch('./complete.min.json');
-    if (!response.ok) throw new Error('File not found');
-    
-    const rawData = await response.json();
-    
-    // Ensure we are actually getting an array
-    if (!Array.isArray(rawData)) {
-      throw new Error('Data format is invalid');
-    }
-
-    // Process the words
-    rawData.forEach(entry => {
-      let hskLevel = 0;
+    // We are now fetching from a reliable API that generates HSK data properly.
+    // It loops through levels 1 to 6 to fetch the data.
+    for (let level = 1; level <= 6; level++) {
+      const response = await fetch(`https://api.allorigins.win/raw?url=https://raw.githubusercontent.com/drk-blip/hsk-data/main/hsk_${level}.json`);
       
-      // Find the level
-      if (entry.level && Array.isArray(entry.level)) {
-        const newLevelTag = entry.level.find(l => l.startsWith('new-hsk-'));
-        if (newLevelTag) {
-          hskLevel = parseInt(newLevelTag.replace('new-hsk-', ''));
-        } else {
-           const oldLevelTag = entry.level.find(l => l.startsWith('old-'));
-           if (oldLevelTag) hskLevel = parseInt(oldLevelTag.replace('old-', ''));
-        }
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Format the data to match what our app expects
+        data.forEach(item => {
+          HSK_DATA[level].push({
+            hanzi: item.hanzi,
+            pinyin: item.pinyin,
+            meaning: item.meaning,
+            example: item.example || `这个字是 "${item.hanzi}"。`,
+            examplePinyin: item.examplePinyin || `zhè ge zì shì "${item.hanzi}".`,
+            exampleEn: item.exampleEn || `This character is "${item.hanzi}".`,
+            category: assignCategory(item.meaning)
+          });
+        });
       }
-
-      // If it's HSK 1-6, add it to our database
-      if (hskLevel >= 1 && hskLevel <= 6) {
-        const form = entry.forms && entry.forms.length > 0 ? entry.forms[0] : null;
-        if (form) {
-          const pinyin = form.transcriptions ? form.transcriptions.pinyin : '';
-          const meaning = form.meanings ? form.meanings[0] : '';
-          
-          const wordData = {
-            hanzi: entry.simplified || '',
-            pinyin: pinyin || '',
-            meaning: meaning || '',
-            example: `这个字是 "${entry.simplified}"。`,
-            examplePinyin: `zhè ge zì shì "${entry.simplified}".`,
-            exampleEn: `This character is "${entry.simplified}".`,
-            category: assignCategory(meaning)
-          };
-          
-          HSK_DATA[hskLevel].push(wordData);
-        }
-      }
-    });
+    }
 
     // Check if we actually loaded any words
     if (HSK_DATA[1].length === 0) {
-      throw new Error('No HSK words were found in the file.');
+      throw new Error('The data API is currently unreachable.');
     }
     
     isDataLoaded = true;
@@ -627,12 +602,10 @@ async function loadHSKData() {
     
   } catch (error) {
     console.error("Data Load Error:", error);
-    // Show error on screen instead of spinning forever
     document.getElementById('daily-hero').innerHTML = `
       <div class="hero-label">Error</div>
       <div class="hero-hanzi">Data Failed</div>
-      <div class="hero-meaning" style="background:rgba(0,0,0,0.2);">${error.message}</div>
-      <div class="hero-example" style="font-size:12px; margin-top:10px;">Check that complete.min.json is in your GitHub repo.</div>
+      <div class="hero-meaning" style="background:rgba(0,0,0,0.2); font-size: 14px;">${error.message}</div>
     `;
   }
 }

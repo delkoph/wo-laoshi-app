@@ -1,0 +1,63 @@
+{
+  "sourceDirectory": "https://admin.chinesetest.cn/godownload.do",
+  "retrieved": "2026-10-27",
+  "sourceHashes": {
+    "pdf": "550263995e8882e75bca1ad90a3c8468226fbbe1139fbecd058a5fc1f9928e53",
+    "rar": "ad7e0dd053ce869be1b7fe1c3962bd0ae3f1a2c35e418fb10aa0bd279fcf938a"
+  },
+  "items": [
+    {
+      "id": "h10901-q1",
+      "paper": "H10901",
+      "level": 1,
+      "question": 1,
+      "answer": "✓",
+      "page": 2,
+      "keys": [
+        "打电话",
+        "电话"
+      ],
+      "alt": "A person making a telephone call",
+      "clipStart": 122.0,
+      "clipEnd": 123.95,
+      "sourcePdf": "https://admin.chinesetest.cn/userfiles/file/HSK/level1/H10901.pdf",
+      "sourceAudio": "https://admin.chinesetest.cn/userfiles/file/HSK/level1/H10901.rar"
+    },
+    {
+      "id": "h10901-q5",
+      "paper": "H10901",
+      "level": 1,
+      "question": 5,
+      "answer": "✓",
+      "page": 2,
+      "keys": [
+        "下雨",
+        "雨"
+      ],
+      "alt": "A rainy scene",
+      "clipStart": 189.35,
+      "clipEnd": 191.05,
+      "sourcePdf": "https://admin.chinesetest.cn/userfiles/file/HSK/level1/H10901.pdf",
+      "sourceAudio": "https://admin.chinesetest.cn/userfiles/file/HSK/level1/H10901.rar"
+    },
+    {
+      "id": "h10901-q6-a",
+      "paper": "H10901",
+      "level": 1,
+      "question": 6,
+      "answer": "A",
+      "page": 3,
+      "keys": [
+        "冷",
+        "天气"
+      ],
+      "alt": "A person dressed for cold weather",
+      "clipStart": 248.15,
+      "clipEnd": 251.8,
+      "sourcePdf": "https://admin.chinesetest.cn/userfiles/file/HSK/level1/H10901.pdf",
+      "sourceAudio": "https://admin.chinesetest.cn/userfiles/file/HSK/level1/H10901.rar"
+    }
+  ],
+  "verification": "Question-to-picture mappings checked against the publisher's answer key. Clip times aligned to the second rendition of each prompt using speech recognition and the official transcript. Audio is original exam recording, trimmed and re-encoded, not synthesized.",
+  "rights": "Source materials are publisher-owned public downloads, not verified open-licensed media. Only three selected question excerpts are included. Confirm reuse rights before public redistribution; no whole exam library is included."
+}

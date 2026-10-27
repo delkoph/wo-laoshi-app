@@ -1,0 +1,11 @@
+{
+  "all_three_exam_recordings_decode": [
+    1.95,
+    1.7,
+    3.65
+  ],
+  "navigation_cancels_autopilot": true,
+  "unsafe_import_rejected": true,
+  "missing_mandarin_voice_stops_explicitly": true,
+  "surname_sense_not_mapped_to_cold_picture": true
+}
